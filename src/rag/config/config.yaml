@@ -1,0 +1,42 @@
+# OpenAI API配置
+openai:
+  api_type: "azure"  # 可选: azure, openai
+  api_base: "https://research-01-02.openai.azure.com/"
+  api_version: "2024-02-01"
+  api_key: "${OPENAI_API_KEY}"  # 从环境变量获取
+  model_name: "gpt-4"
+
+# 通义千问配置
+qwen:
+  api_type: "qwen"  # 可选: azure, openai, qwen
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: "${DASHSCOPE_API_KEY}"  # 从环境变量获取
+  model_name: "qwen-max-latest"
+
+# 向量存储配置
+vectorstore:
+  metadata_path: "data/meta/retrieval_traits_test"
+  persist_directory: "data/vectorstore"
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+# 角色确定配置
+role_determination:
+  top_k: 5  # 返回的最相关角色数量
+  similarity_threshold: 0.7  # 相似度阈值
+  main_character_threshold: 0.2  # 判断主角的阈值
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/app.log"
+
+# RAG配置
+rag:
+  max_context_length: 2048  # 上下文最大长度
+  temperature: 0.7  # 生成温度
+  top_p: 0.95  # 采样阈值 
+
+# 通用配置
+general:
+  HF_ENDPOINT: True # 镜像 huggingface.co 域名。
