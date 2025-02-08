@@ -1,27 +1,33 @@
 from typing import Dict, Optional
 from llm_api.inference import QueryModel
 
-# Define the base prompt as a constant
-REWRITE_QUERY_PROMPT = (
-    "拓展原始查询以更好地补充信息，说明在什么样的情形下，什么人在什么地方做了什么事情。\n"
-    "重写时请考虑以下几点：\n"
-    "1. 保留查询的核心语义\n"
-    "2. 添加更多角色相关的描述词，比如外貌、语言、动作、心理、神态。\n"
-    "3. 根据原始查询的信息，增加合适的信息，新增的人物、地点、情形需符合原始查询的逻辑\n"
-    "\n"
-    "原始查询：{query}\n"
-)
+class PromptTemplate:
+    rewrite_query_prompt: str = (
+        """"你是一名教育心理学家，首先分析什么样的人能够正确回答下面的问题。然后根据问题说明这个人经历了什么样的事情，才能够回答正确这道问题。
+
+这个人需要回答的问题是：
+{query}
+
+请考虑以下几点：
+1. 保留问题的核心语义，不增加不确定的问题信息。
+2. 添加更多角色相关的描述词，比如外貌、语言、动作、心理、神态。
+3. 根据原始查询的信息，增加合适的信息，新增的人物、地点、情形需符合原始查询的逻辑。
+4. 不要输出包含答案的信息。
+
+你对这个人的描述是："""
+    )
 
 class QueryRewritingAgent:
-    def __init__(self, llm_config: QueryModel):
+    def __init__(self, llm_config: QueryModel, prompt_tpl: PromptTemplate = PromptTemplate()):
         """
         初始化查询重写类
         Args:
             llm_config: 
         """
+        self.prompt_tpl = prompt_tpl
         self.llm_api = QueryModel(llm_config)
         
-    def rewrite_query(self, original_query: str, 
+    def rewrite_query_agent(self, original_query: str, 
                      context: Optional[Dict] = None) -> str:
         """
         重写查询
@@ -49,6 +55,6 @@ class QueryRewritingAgent:
             构建的提示词
         """
         # Use the constant and format it with the query
-        base_prompt = REWRITE_QUERY_PROMPT.format(query=query)
+        base_prompt = self.prompt_tpl.rewrite_query_prompt.format(query=query)
                 
         return base_prompt 

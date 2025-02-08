@@ -3,8 +3,23 @@ from langchain_chroma import Chroma
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 import logging
 
+
+
+class PromptTemplate:
+    determine_roles_prompt: str = """请你分析，谁的背景和自我认知能够最好的回答下面的问题？
+候选人信息：递归 list 
+{}
+{}
+{}
+
+这个人需要分析的问题：
+{question}
+
+请给出你的分析，并输出这个人的名字：
+"""
+
 class RoleMatching:
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict, prompt_tpl: PromptTemplate = PromptTemplate()):
         """
         初始化角色确定类
         Args:
@@ -12,22 +27,37 @@ class RoleMatching:
             top_k: 返回的相似度最高的k个角色
         """
         self.config = config
+        self.prompt_tpl = prompt_tpl
         self.logger = logging.getLogger(__name__)
         self.top_k = config["role_matching"]["top_k"]
         self.similarity_threshold = config["role_matching"]["similarity_threshold"]
         self.main_character_threshold = config["role_matching"]["main_character_threshold"]
 
-    def determine_roles(self, run: str) -> List[Dict]:
+    def 检索相似的文本(self, run: str) -> List[Dict]:
+        '''根据 rewritten_query ，检索对应的 块 retrieved_docs'''
+        vectorstore.similarity_search_with_score(rewritten_query)
+        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        retrieved_docs = retriever.invoke(rewritten_query)
+        print(retrieved_docs)
+        
+        pass
+
+    def determine_roles_agent(
+        self, 
+        query: str) -> List[Dict]:
         """
-        确定角色
+        确定角色, 问模型，在检索相似的文本中，谁的背景和自我认知能够最好的回答 “” 问题？
         Args:
-            run: 查询文本
+            query: 查询文本
         Returns:
             角色信息列表
         """
+        
+        prompt = self.prompt_tpl.determine_roles_prompt.format(query=query)
+        
         try:
             results = self.vectorstore.similarity_search_with_scores(
-                run, k=self.top_k
+                query, k=self.top_k
             )
             
             roles = [self._format_role_info(doc, score) 

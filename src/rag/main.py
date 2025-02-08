@@ -61,6 +61,7 @@ def main():
     # 设置日志
     setup_logging()
     logger = logging.getLogger(__name__)
+    model_name = "qwen-max-latest"
 
     try:
         # 加载配置
@@ -73,27 +74,27 @@ def main():
 
         # 初始化各个组件
         llm_api = QueryModel(
-            llm_config=llm_config["qwen2.5-7b-instruct-1m"]
+            llm_config=llm_config[model_name]
         )   # 所以可能不需要初始化这个
         query_rewriting = QueryRewritingAgent(
-            llm_config=llm_config["qwen2.5-7b-instruct-1m"]
+            llm_config=llm_config[model_name]
         )
         index_builder = IndexBuilder(config)
         vectorstore = index_builder.load_index(config["vectorstore"]["persist_directory"]+'/'+config["vectorstore"]["metadata_path"].split('/')[-1])    # # 读取大的向量库，如果没有，则新建一个
         role_matching = RoleMatching(config)
         rag_service = RAGService(
             config=config, 
-            llm_config=llm_config["qwen2.5-7b-instruct-1m"],
+            llm_config=llm_config[model_name],
             index_builder=index_builder,
         )
 
         # 示例查询
-        original_query = "The capitalist class of the mid-twentieth century were said to join the upper class because they:"
+        original_query = "蜂鸟类中，蜂鸟独有一对椭圆形骨，即籽骨，嵌入在扩张的十字韧带腱膜尾部。这块籽骨支撑着多少对肌腱？请用数字回答。"
         
         # 1. 重写查询
         logger.info("重写查询...")
-        rewritten_query = query_rewriting.rewrite_query(
-            original_query,
+        rewritten_query = query_rewriting.rewrite_query_agent(
+            original_query=original_query,
             context={"domain": "social class", "era": "mid-twentieth century"}   # TODO use context
         )
         logger.info(f"重写后的查询: {rewritten_query}")
@@ -107,13 +108,16 @@ def main():
         retrieved_docs = retriever.invoke(rewritten_query)
         print(retrieved_docs)
         
-        roles = role_matching.determine_roles(vectorstore, rewritten_query)
-        if not roles:
+        role = role_matching.determine_roles_agent(
+            vectorstore, 
+            rewritten_query
+            )
+        if not role:
             logger.warning("未找到相关角色")
             return
 
-        # 2.1 选择最相关的角色
-        target_role = roles[0]
+        # 2.1 选择最相关的角色，如果 o1 r1 这样的模型，给出了理由，那么我觉得可以不用这个做了。
+        target_role = role[0]
         logger.info(f"选定角色: {target_role['role_name']}")
         
         # 2.2 为选的的角色建立数据库【optional】
