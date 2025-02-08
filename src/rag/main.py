@@ -6,7 +6,7 @@ from typing import Dict
 
 from llm_api.inference import QueryModel
 from llm_api.query_rewriting import QueryRewritingAgent
-from role_determination.role_determination import RoleMatching
+from role_matching.role_matching import RoleMatching
 from index_builder.index_builder import IndexBuilder
 from rag_service.rag_service import RAGService
 
@@ -80,7 +80,7 @@ def main():
         )
         index_builder = IndexBuilder(config)
         vectorstore = index_builder.load_index(config["vectorstore"]["persist_directory"]+'/'+config["vectorstore"]["metadata_path"].split('/')[-1])    # # 读取大的向量库，如果没有，则新建一个
-        role_determination = RoleMatching(config)
+        role_matching = RoleMatching(config)
         rag_service = RAGService(
             config=config, 
             llm_config=llm_config["qwen2.5-7b-instruct-1m"],
@@ -100,14 +100,24 @@ def main():
 
         # 2. 确定角色
         logger.info("确定角色...")
-        roles = role_determination.determine_roles(rewritten_query)
+        
+        # for test 
+        vectorstore.similarity_search_with_score(rewritten_query)
+        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        retrieved_docs = retriever.invoke(rewritten_query)
+        print(retrieved_docs)
+        
+        roles = role_matching.determine_roles(vectorstore, rewritten_query)
         if not roles:
             logger.warning("未找到相关角色")
             return
 
-        # 选择最相关的角色
+        # 2.1 选择最相关的角色
         target_role = roles[0]
         logger.info(f"选定角色: {target_role['role_name']}")
+        
+        # 2.2 为选的的角色建立数据库【optional】
+        
 
         # 3. 使用RAG服务生成回答
         logger.info("生成回答...")

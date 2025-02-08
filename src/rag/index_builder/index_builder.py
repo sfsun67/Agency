@@ -4,6 +4,7 @@ import logging
 import json
 import uuid
 import re
+import time
 from langchain_chroma import Chroma
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_core.documents import Document
@@ -191,16 +192,24 @@ class IndexBuilder:
         if not os.path.exists(persist_directory):
             self.logger.warning(f"Index directory {persist_directory} does not exist")
             self.logger.info(f"新建 metadata 索引 {persist_directory} ...")
+            start_time = time.time()  # Record the start time
             vectorstore = self.build_index(initialize_meta_data=True)
+            end_time = time.time()  # Record the end time
+            elapsed_time = end_time - start_time  # Calculate the elapsed time
+            self.logger.info(f"Succeed to 新建 index. 花费 {elapsed_time:.2f} 秒。")
             
             return vectorstore
 
         try:
+            self.logger.info(f"加载 metadata 索引 {persist_directory} ...")
+            start_time = time.time()  # Record the start time
             vectorstore = Chroma(
                 persist_directory=persist_directory,
                 embedding_function=self.embeddings
             )
-            self.logger.info(f"Succeed to load index.")
+            end_time = time.time()  # Record the end time
+            elapsed_time = end_time - start_time  # Calculate the elapsed time
+            self.logger.info(f"Succeed to load index {persist_directory.split('/')[-1]}. 花费 {elapsed_time:.2f} 秒。")
             
             return vectorstore
         

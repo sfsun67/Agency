@@ -8,9 +8,9 @@ project/
 │   ├── llm_api.py           # LLMAPI 类
 │   ├── query_rewriting.py   # QueryRewriting 类
 │   └── [utils.py](http://utils.py/)             # 通用工具函数
-├── role_determination/
+├── role_matching/
 │   ├── **init**.py
-│   └── role_determination.py # RoleDetermination 类
+│   └── role_matching.py # RoleDetermination 类
 ├── index_builder/
 │   ├── **init**.py
 │   └── index_builder.py      # IndexBuilder 类

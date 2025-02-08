@@ -126,7 +126,7 @@ class QueryModel:
         """
         if api_config['supplier'] == "qwen":
             if api_config['api_key'] and api_config['api_key'] != "YOUR_API_KEY":
-                logger.info("使用配置中的 API key：")
+                logger.info("使用配置中的 API key")
             else:
                 logger.info("环境变量中的 API key，已配置到参数中")
                 api_config['api_key'] = os.getenv('DASHSCOPE_API_KEY')

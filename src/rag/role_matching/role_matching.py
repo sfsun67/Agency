@@ -13,9 +13,9 @@ class RoleMatching:
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.top_k = config["role_determination"]["top_k"]
-        self.similarity_threshold = config["role_determination"]["similarity_threshold"]
-        self.main_character_threshold = config["role_determination"]["main_character_threshold"]
+        self.top_k = config["role_matching"]["top_k"]
+        self.similarity_threshold = config["role_matching"]["similarity_threshold"]
+        self.main_character_threshold = config["role_matching"]["main_character_threshold"]
 
     def determine_roles(self, run: str) -> List[Dict]:
         """
