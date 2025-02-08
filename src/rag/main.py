@@ -4,9 +4,9 @@ import logging
 from dotenv import load_dotenv
 from typing import Dict
 
-from llm_api.llm_api import LLMAPI
-from llm_api.query_rewriting import QueryRewriting
-from role_determination.role_determination import RoleDetermination
+from llm_api.inference import QueryModel
+from llm_api.query_rewriting import QueryRewritingAgent
+from role_determination.role_determination import RoleMatching
 from index_builder.index_builder import IndexBuilder
 from rag_service.rag_service import RAGService
 
@@ -20,10 +20,42 @@ def setup_logging():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
-def load_config(config_path: str = "config/config.yaml") -> Dict:
+def load_config(config_path: str) -> Dict:
     """加载配置"""
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+    
+def todo(human_mode, llm_backend):
+    # TODO args
+    ###################################################
+    ##  Stages where human input will be requested  ###
+    ###################################################
+    human_in_loop = {
+        "literature review":      human_mode,
+        "plan formulation":       human_mode,
+        "data preparation":       human_mode,
+        "running experiments":    human_mode,
+        "results interpretation": human_mode,
+        "report writing":         human_mode,
+        "report refinement":      human_mode,
+    }
+
+    ###################################################
+    ###  LLM Backend used for the different phases  ###
+    ###################################################
+    agent_models = {
+        "literature review":      llm_backend,
+        "plan formulation":       llm_backend,
+        "data preparation":       llm_backend,
+        "running experiments":    llm_backend,
+        "report writing":         llm_backend,
+        "results interpretation": llm_backend,
+        "paper refinement":       llm_backend,
+    }
+    
+    # TODO 实现一个 Agent，用于扮演角色回答问题，执行 rag 等操作
+    reviewers = ReviewersAgent(model=self.model_backbone, notes=self.notes, openai_api_key=self.openai_api_key)
+    
 
 def main():
     # 设置日志
@@ -32,20 +64,28 @@ def main():
 
     try:
         # 加载配置
-        config = load_config()
+        config = load_config("config/config.yaml")
+        llm_config = load_config("config/llm_config.yaml")
         
         # 设置 HF 代理
         if config["general"]["HF_ENDPOINT"]:
             os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
         # 初始化各个组件
-        llm_api = LLMAPI(config["qwen"])
-        query_rewriting = QueryRewriting(llm_api)
+        llm_api = QueryModel(
+            llm_config=llm_config["qwen2.5-7b-instruct-1m"]
+        )   # 所以可能不需要初始化这个
+        query_rewriting = QueryRewritingAgent(
+            llm_config=llm_config["qwen2.5-7b-instruct-1m"]
+        )
         index_builder = IndexBuilder(config)
-        # bug mate 向量库存在，但依旧重新计算向量库了。
         vectorstore = index_builder.load_index(config["vectorstore"]["persist_directory"]+'/'+config["vectorstore"]["metadata_path"].split('/')[-1])    # # 读取大的向量库，如果没有，则新建一个
-        role_determination = RoleDetermination(config)
-        rag_service = RAGService(config, llm_api, index_builder)
+        role_determination = RoleMatching(config)
+        rag_service = RAGService(
+            config=config, 
+            llm_config=llm_config["qwen2.5-7b-instruct-1m"],
+            index_builder=index_builder,
+        )
 
         # 示例查询
         original_query = "The capitalist class of the mid-twentieth century were said to join the upper class because they:"
@@ -54,7 +94,7 @@ def main():
         logger.info("重写查询...")
         rewritten_query = query_rewriting.rewrite_query(
             original_query,
-            context={"domain": "social class", "era": "mid-twentieth century"}
+            context={"domain": "social class", "era": "mid-twentieth century"}   # TODO use context
         )
         logger.info(f"重写后的查询: {rewritten_query}")
 
@@ -71,7 +111,7 @@ def main():
 
         # 3. 使用RAG服务生成回答
         logger.info("生成回答...")
-        answer = rag_service.query(
+        answer = rag_service.run(
             rewritten_query,
             target_role["role_name"]
         )

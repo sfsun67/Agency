@@ -1,0 +1,101 @@
+# LLM API配置
+gpt-4o-mini:
+  supplier: "openai"
+  client: "openai"
+  base_url: "https://api.openai.com/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "gpt-4o"
+
+gpt-4o:
+  supplier: "openai"
+  client: "openai"
+  base_url: "https://api.openai.com/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "gpt-4o"
+  costs:
+    input_costs: 2.5
+    output_costs: 10
+    cost_currency: "USD"
+
+o1-mini:
+  supplier: "openai"
+  client: "openai"
+  base_url: "https://api.openai.com/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "o1-mini"
+  costs:
+    input_costs: 3
+    output_costs: 12
+    cost_currency: "USD"
+
+o1:
+  supplier: "openai"
+  client: "openai"
+  base_url: "https://api.openai.com/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "o1"
+  costs:
+    input_costs: 15
+    output_costs: 60
+    cost_currency: "USD"
+
+gpt-4o:
+  supplier: "azure"
+  client: "azure"
+  base_url: "https://your-resource-name.openai.azure.com/"
+  api_version: "2024-03-01-preview"
+  api_key: "YOUR_API_KEY"
+  model_name: "gpt-4o"
+
+qwen-max-latest:
+  supplier: "qwen"
+  client: "openai"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "qwen-max-latest"
+  costs:    # 20250208
+    input_costs: 2.4
+    output_costs: 9.6
+    cost_currency: "CNY"
+
+qwen2.5-7b-instruct-1m:
+  supplier: "qwen"
+  client: "openai"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "qwen2.5-7b-instruct-1m"
+  costs:    # 20250208
+    input_costs: 0.5
+    output_costs: 1
+    cost_currency: "CNY"
+
+
+claude-3-5-sonnet:
+  supplier: "anthropic"
+  client: "anthropic"
+  base_url: "https://api.anthropic.com/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "claude-3-5-sonnet"
+  costs:  
+    input_costs: 3
+    output_costs: 12
+    cost_currency: "USD"
+
+deepseek-chat:
+  supplier: "deepseek"
+  client: "openai"
+  base_url: "https://api.deepseek.com/v1"
+  api_version: "2024-03-01"
+  api_key: "YOUR_API_KEY"
+  model_name: "deepseek-chat"
+  costs:
+    input_costs: 1
+    output_costs: 5
+    cost_currency: "USD"

@@ -1,18 +1,4 @@
-# OpenAI API配置
-openai:
-  api_type: "azure"  # 可选: azure, openai
-  api_base: "https://research-01-02.openai.azure.com/"
-  api_version: "2024-02-01"
-  api_key: "${OPENAI_API_KEY}"  # 从环境变量获取
-  model_name: "gpt-4"
-
-# 通义千问配置
-qwen:
-  api_type: "qwen"  # 可选: azure, openai, qwen
-  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-  api_key: "${DASHSCOPE_API_KEY}"  # 从环境变量获取
-  model_name: "qwen-max-latest"
-
+# LLM API配置
 # 向量存储配置
 vectorstore:
   metadata_path: "data/meta/retrieval_traits_test"

@@ -132,6 +132,7 @@ class IndexBuilder:
                    batch_size: int = 512) -> Chroma:
         """
         Build index with batch processing
+        TODO: Add support for files, updating existing index
         Args:
             initialize_meta_data: 如果是第一次运行，需要将元数据初始化为向量存储。
             files: List[str]当前角色所涉及到的文件
@@ -156,8 +157,6 @@ class IndexBuilder:
             persist_directory = os.path.join(self.persist_directory, combined_name)
         else:
             raise ValueError("arg files is required")
-            
-
         
         all_splits = self.extract_from_json_files(files_path=files_path)
         all_splits_length = len(all_splits)
@@ -180,7 +179,6 @@ class IndexBuilder:
         self.logger.info(f"Successfully built index, stored in {persist_directory}")
         
         return vectorstore
-
 
     def load_index(self, persist_directory: str) -> Optional[Chroma]:
         """

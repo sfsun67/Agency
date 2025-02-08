@@ -1,15 +1,15 @@
 from typing import Dict, Optional
-from .llm_api import LLMAPI
+from llm_api.inference import QueryModel
 
-class QueryRewriting:
-    def __init__(self, llm_api: LLMAPI):
+class QueryRewritingAgent:
+    def __init__(self, llm_config: QueryModel):
         """
         初始化查询重写类
         Args:
-            llm_api: LLMAPI实例
+            llm_config: 
         """
-        self.llm_api = llm_api
-
+        self.llm_api = QueryModel(llm_config)
+        
     def rewrite_query(self, original_query: str, 
                      context: Optional[Dict] = None) -> str:
         """
@@ -21,35 +21,30 @@ class QueryRewriting:
             重写后的查询
         """
         prompt = self._build_rewrite_prompt(original_query, context)
-        rewritten_query = self.llm_api.generate_text(
+        rewritten_query = self.llm_api.run(
             prompt,
             temperature=0.3  # 使用较低的temperature以获得更确定性的结果
         )
         return rewritten_query
 
-    def _build_rewrite_prompt(self, query: str, 
+    def _build_rewrite_prompt(self, run: str, 
                            context: Optional[Dict]) -> str:
         """
         构建重写提示
         Args:
-            query: 原始查询
+            run: 原始查询
             context: 上下文信息
         Returns:
             构建的提示词
         """
         base_prompt = (
-            "请重写以下查询以更好地匹配角色检索需求。"
+            "拓展原始查询以更好地补充信息，说明在什么样的情形下，什么人在什么地方做了什么事情。\n"
             "重写时请考虑以下几点：\n"
             "1. 保留查询的核心语义\n"
-            "2. 添加更多角色相关的描述词\n"
-            "3. 使用更精确的表达方式\n\n"
-            f"原始查询：{query}\n"
+            "2. 添加更多角色相关的描述词，比如外貌、语言、动作、心理、神态。\n"
+            "3. 根据原始查询的信息，增加合适的信息，新增的人物、地点、情形需符合原始查询的逻辑\n"
+            "\n"
+            f"原始查询：{run}\n"
         )
-        
-        if context:
-            base_prompt += f"\n上下文信息：\n"
-            for key, value in context.items():
-                base_prompt += f"{key}: {value}\n"
                 
-        base_prompt += "\n重写后的查询："
         return base_prompt 

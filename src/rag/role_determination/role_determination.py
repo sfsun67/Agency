@@ -3,7 +3,7 @@ from langchain_chroma import Chroma
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 import logging
 
-class RoleDetermination:
+class RoleMatching:
     def __init__(self, config: Dict):
         """
         初始化角色确定类
@@ -13,28 +13,21 @@ class RoleDetermination:
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=config["vectorstore"]["embedding_model"]
-        )
-        self.vectorstore = Chroma(
-            persist_directory=config["vectorstore"]["persist_directory"],
-            embedding_function=self.embeddings
-        )
         self.top_k = config["role_determination"]["top_k"]
         self.similarity_threshold = config["role_determination"]["similarity_threshold"]
         self.main_character_threshold = config["role_determination"]["main_character_threshold"]
 
-    def determine_roles(self, query: str) -> List[Dict]:
+    def determine_roles(self, run: str) -> List[Dict]:
         """
         确定角色
         Args:
-            query: 查询文本
+            run: 查询文本
         Returns:
             角色信息列表
         """
         try:
             results = self.vectorstore.similarity_search_with_scores(
-                query, k=self.top_k
+                run, k=self.top_k
             )
             
             roles = [self._format_role_info(doc, score) 
