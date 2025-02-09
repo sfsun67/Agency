@@ -95,15 +95,15 @@ def curr_cost_est(prompt=None,
             logger.error(f"费用计算出现错误: {e}")
         return 0.0
 
-class QueryLLMs:
+class AgencyLLMs:
     """
-    QueryLLMs 封装了调用多种大语言模型的查询逻辑，
+    AgencyLLMs 封装了调用多种大语言模型的查询逻辑，
     并支持从环境变量和传入参数中获取 API key，模型配置也全部提取到固定的字典中。
     """
     
     def __init__(self, llm_config=None):
         """
-        初始化 QueryLLMs 实例。
+        初始化 AgencyLLMs 实例。
         
         参数：
             api_config (str): OpenAI 的 API key。

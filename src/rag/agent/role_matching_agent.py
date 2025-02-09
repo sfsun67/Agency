@@ -5,8 +5,8 @@ from langchain_chroma import Chroma
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 import logging
 from utils.prompt import BasePrompt
-from llm_api.inference import QueryLLMs
-
+from llm_api.inference import AgencyLLMs
+from rag_service.service import RAGService
 
 class DetermineRoleSchema(BaseModel):
     file_name: str = Field(..., description="选定角色信息所在的作品")
@@ -61,41 +61,23 @@ class RoleMatching:
         """
         self.logger = logging.getLogger(__name__)
         self.config = config
-        self.llm_api = QueryLLMs(llm_config)
+        self.llm_api = AgencyLLMs(llm_config)
         self.vectordb = vectordb
         
         self.top_k = config["role_matching"]["top_k"]
-        self.similarity_threshold = config["role_matching"]["similarity_threshold"]
         self.main_character_threshold = config["role_matching"]["main_character_threshold"]
 
-    def retrieve_similar_texts(self, query: str) -> List[tuple]:
-        """Retrieve similar texts based on the query using vector similarity search.
-        
-        Args:
-            query: The query text to search for
-            vectordb: The Chroma vector store instance to search in
-            
-        Returns:
-            List of tuples containing (document, similarity_score)
-        """
-        retriever_docs = self.vectordb.similarity_search_with_score(query)
-        
-        for doc, cos_score in retriever_docs:
-            file_name = doc.metadata['file_name']
-            element_id = doc.metadata['element_id']
-            score = 1 - cos_score
-            self.logger.info(
-                f"Retrieved text:\nfile name: {file_name}\n"
-                f"element id: {element_id}; score: {score}."
-            )
-            if score < self.similarity_threshold:
-                self.logger.warning(
-                    f"Similarity score below threshold {self.similarity_threshold}."
-                )
-        
-        return retriever_docs
+
     
-    def find_most_frequent_substring(self, string_list：, target_substring):
+    def find_most_frequent_substring(self, string_list: List[str], target_substring: str) -> str:
+        """
+        找到字符串列表中，出现次数最多的子字符串
+        Args:
+            string_list: 字符串列表
+            target_substring: 目标子字符串
+        Returns:
+            出现次数最多的子字符串
+        """
         return max(string_list, key=lambda s: s.count(target_substring))
 
     def determine_roles_agent(
@@ -112,7 +94,12 @@ class RoleMatching:
             角色信息列表
         """
         # 调用检索相似文本函数
-        retriever_docs = self.retrieve_similar_texts(rewritten_query)
+        rag = RAGService(
+            config=self.config,
+            vectordb=self.vectordb,
+            llm_api=self.llm_api
+        )
+        retriever_docs = rag.retrieve_similar_texts(rewritten_query)
         
         doc_list = {}
         for doc, _ in retriever_docs:

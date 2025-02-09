@@ -1,13 +1,15 @@
-from typing import List, Dict, Optional
 import logging
+from typing import List, Dict, Optional
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from llm_api.inference import QueryLLMs
-
+from llm_api.inference import AgencyLLMs
 from index_builder.index_builder import IndexBuilder
 
 class RAGService:
-    def __init__(self, config: Dict, llm_config: QueryLLMs, index_builder: IndexBuilder):
+    def __init__(self, 
+                config: Dict,
+                vectordb: Chroma,
+                llm_api: AgencyLLMs):
         """
         初始化RAG服务
         Args:
@@ -15,10 +17,38 @@ class RAGService:
             llm_api: LLMAPI实例
             index_builder: IndexBuilder实例
         """
-        self.config = config
-        self.llm_api = QueryLLMs(llm_config)
-        self.index_builder = index_builder
         self.logger = logging.getLogger(__name__)
+        self.vectordb = vectordb
+        self.llm_api = llm_api
+        self.similarity_threshold = config["role_matching"]["similarity_threshold"]
+
+    def retrieve_similar_texts(self, query: str) -> List[tuple]:
+        """Retrieve similar texts based on the query using vector similarity search.
+        
+        Args:
+            query: The query text to search for
+            vectordb: The Chroma vector store instance to search in
+            
+        Returns:
+            List of tuples containing (document, similarity_score)
+        """
+        retriever_docs = self.vectordb.similarity_search_with_score(query)
+        
+        for doc, cos_score in retriever_docs:
+            file_name = doc.metadata['file_name']
+            element_id = doc.metadata['element_id']
+            score = 1 - cos_score
+            self.logger.info(
+                f"Retrieved text:\nfile name: {file_name}\n"
+                f"element id: {element_id}; score: {score}."
+            )
+            if score < self.similarity_threshold:
+                self.logger.warning(
+                    f"Similarity score below threshold {self.similarity_threshold}."
+                )
+        
+        return retriever_docs
+
 
     def run(self, 
               question: str, 

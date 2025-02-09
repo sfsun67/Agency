@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 from typing import Dict
 import datetime
 
-from llm_api.inference import QueryLLMs
+from llm_api.inference import AgencyLLMs
 from llm_api.query_rewriting import QueryRewritingAgent
-from role_matching.role_matching import RoleMatching
+from agent.role_matching_agent import RoleMatching
 from index_builder.index_builder import IndexBuilder
-from rag_service.rag_service import RAGService
+from rag_service.service import RAGService
 
 # 加载环境变量
 load_dotenv()
@@ -92,9 +92,6 @@ def main():
             os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
         # 初始化各个组件
-        llm_api = QueryLLMs(
-            llm_config=llm_config[model_name]
-        )   # 所以可能不需要初始化这个
         query_rewriting = QueryRewritingAgent(
             llm_config=llm_config[model_name]
         )
@@ -105,11 +102,7 @@ def main():
             llm_config=llm_config[model_name],
             vectordb=vectorstore            
         )
-        rag_service = RAGService(
-            config=config, 
-            llm_config=llm_config[model_name],
-            index_builder=index_builder,
-        )
+
 
         # 示例查询
         original_query = "蜂鸟类中，蜂鸟独有一对椭圆形骨，即籽骨，嵌入在扩张的十字韧带腱膜尾部。这块籽骨支撑着多少对肌腱？请用数字回答。"
@@ -123,14 +116,19 @@ def main():
         logger.info("确定角色...")
         
         # 使用新的函数名和参数
-        role = role_matching.determine_roles_agent(
+        role_info = role_matching.determine_roles_agent(
             query=original_query,
             rewritten_query=rewritten_query,
         )
 
-        # 2.1 选择最相关的角色，如果 o1 r1 这样的模型，给出了理由，那么我觉得可以不用这个做了。
+        # 任务1：完成单轮对话
+        # 输入
         
-        # 2.2 为选的的角色建立数据库【optional】
+        # 任务2：完成多轮对话
+        
+        
+        # 任务3：将 CoT 模式嵌入到任务1 与 任务2 中。
+        
         
 
         # 3. 使用RAG服务生成回答
