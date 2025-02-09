@@ -84,7 +84,7 @@ class IndexBuilder:
                     for entry in data:
                         if "output" in entry:
                             page_content = entry["output"].get("scene", "")    # 建立索引的内容
-                            file_name_specific = entry.get("metadata", {}).get("file_name", "unknown source")
+                            file_name_specific = entry.get("metadata", {}).get("filename", "unknown source")
                             element_id = entry.get("metadata", {}).get("element_id", 0)
                             languages = entry.get("metadata", {}).get("languages", [])
                             if not isinstance(languages, list) or len(languages) != 1 or not all(isinstance(lang, str) for lang in languages):
@@ -150,7 +150,7 @@ class IndexBuilder:
         files_path = []
         if initialize_meta_data:
             files_path.append(self.metadata_path)    
-            persist_directory = os.path.join(self.persist_directory, self.metadata_path.split('/')[-1])
+            assert persist_directory, "持久化向量库路径为空，请检查传入的参数"
         elif not initialize_meta_data and len(files) > 0:
             files_path = files
             # Generate persist directory name based on file names
@@ -193,7 +193,9 @@ class IndexBuilder:
             self.logger.warning(f"Index directory {persist_directory} does not exist")
             self.logger.info(f"新建 metadata 索引 {persist_directory} ...")
             start_time = time.time()  # Record the start time
-            vectorstore = self.build_index(initialize_meta_data=True)
+            vectorstore = self.build_index(
+                initialize_meta_data=True,
+                persist_directory=persist_directory)
             end_time = time.time()  # Record the end time
             elapsed_time = end_time - start_time  # Calculate the elapsed time
             self.logger.info(f"Succeed to 新建 index. 花费 {elapsed_time:.2f} 秒。")

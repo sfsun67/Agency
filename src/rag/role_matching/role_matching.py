@@ -34,8 +34,14 @@ class RoleMatching:
         self.main_character_threshold = config["role_matching"]["main_character_threshold"]
 
     def 检索相似的文本(self, run: str) -> List[Dict]:
-        '''根据 rewritten_query ，检索对应的 块 retrieved_docs'''
-        vectorstore.similarity_search_with_score(rewritten_query)
+        '''根据 rewritten_query ，检索对应的文件。将得到的文件信息和得分记录在 logger 中。'''
+        retriever_docs = vectorstore.similarity_search_with_score(rewritten_query)
+        
+        for doc, cos_score in retriever_docs:
+            file_name = doc[0].metadata['file_name'], 
+            element_id = doc[0].metadata['element_id'] 
+            self.logger.info(f"检索到的文本: {doc.metadata.get('role_name', 'Unknown')}, score: {score}")
+        
         retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
         retrieved_docs = retriever.invoke(rewritten_query)
         print(retrieved_docs)
@@ -44,16 +50,23 @@ class RoleMatching:
 
     def determine_roles_agent(
         self, 
-        query: str) -> List[Dict]:
+        query: str,
+        rewritten_query: str,
+        vectordb: Chroma) -> List[Dict]:
         """
         确定角色, 问模型，在检索相似的文本中，谁的背景和自我认知能够最好的回答 “” 问题？
         Args:
             query: 查询文本
         Returns:
-            角色信息列表
+            角色信息列表 ?
+                角色：生成过程
         """
         
+        # init 
         prompt = self.prompt_tpl.determine_roles_prompt.format(query=query)
+        
+        # 调用 检索相似的文本 函数，进行 rewritten_query 的检索，返回检索到的文本
+        
         
         try:
             results = self.vectorstore.similarity_search_with_scores(

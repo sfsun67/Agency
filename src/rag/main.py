@@ -3,6 +3,7 @@ import yaml
 import logging
 from dotenv import load_dotenv
 from typing import Dict
+import datetime
 
 from llm_api.inference import QueryModel
 from llm_api.query_rewriting import QueryRewritingAgent
@@ -15,10 +16,28 @@ load_dotenv()
 
 def setup_logging():
     """设置日志"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # 确保日志目录存在
+    os.makedirs('log', exist_ok=True)
+    
+    # 生成日志文件名（使用时间戳）
+    log_filename = f"log/rag_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    
+    # 配置日志格式
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # 设置根日志记录器
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    
+    # 添加文件处理器
+    file_handler = logging.FileHandler(log_filename, encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+    
+    # 添加控制台处理器
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
 
 def load_config(config_path: str) -> Dict:
     """加载配置"""
@@ -80,7 +99,7 @@ def main():
             llm_config=llm_config[model_name]
         )
         index_builder = IndexBuilder(config)
-        vectorstore = index_builder.load_index(config["vectorstore"]["persist_directory"]+'/'+config["vectorstore"]["metadata_path"].split('/')[-1])    # # 读取大的向量库，如果没有，则新建一个
+        vectorstore = index_builder.load_index(config["vectorstore"]["persist_directory"]+'/'+config["vectorstore"]["metadata_path"].split('/')[-1]+'_'+config["vectorstore"]["embedding_model"].split('/')[-1])   # eg. data/vectorstore/retrieval_traits_all-MiniLM-L6-v2
         role_matching = RoleMatching(config)
         rag_service = RAGService(
             config=config, 
@@ -103,14 +122,15 @@ def main():
         logger.info("确定角色...")
         
         # for test 
-        vectorstore.similarity_search_with_score(rewritten_query)
+        a = vectorstore.similarity_search_with_score(rewritten_query)
         retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
         retrieved_docs = retriever.invoke(rewritten_query)
         print(retrieved_docs)
         
         role = role_matching.determine_roles_agent(
-            vectorstore, 
-            rewritten_query
+            query=original_query,
+            rewritten_query=rewritten_query,
+            vectordb=vectorstore, 
             )
         if not role:
             logger.warning("未找到相关角色")
