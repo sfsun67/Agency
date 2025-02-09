@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from typing import Dict
 import datetime
 
-from llm_api.inference import QueryModel
+from llm_api.inference import QueryLLMs
 from llm_api.query_rewriting import QueryRewritingAgent
 from role_matching.role_matching import RoleMatching
 from index_builder.index_builder import IndexBuilder
@@ -80,7 +80,7 @@ def main():
     # 设置日志
     setup_logging()
     logger = logging.getLogger(__name__)
-    model_name = "gpt-4o-mini"    #"qwen-max-latest"
+    model_name = "qwen-max-latest"    # "gpt-4o-mini"
 
     try:
         # 加载配置
@@ -92,7 +92,7 @@ def main():
             os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
         # 初始化各个组件
-        llm_api = QueryModel(
+        llm_api = QueryLLMs(
             llm_config=llm_config[model_name]
         )   # 所以可能不需要初始化这个
         query_rewriting = QueryRewritingAgent(
@@ -127,13 +127,8 @@ def main():
             query=original_query,
             rewritten_query=rewritten_query,
         )
-        if not role:
-            logger.warning("未找到相关角色")
-            return
 
         # 2.1 选择最相关的角色，如果 o1 r1 这样的模型，给出了理由，那么我觉得可以不用这个做了。
-        target_role = role[0]
-        logger.info(f"选定角色: {target_role['role_name']}")
         
         # 2.2 为选的的角色建立数据库【optional】
         
@@ -145,6 +140,8 @@ def main():
             target_role["role_name"]
         )
         logger.info(f"生成的回答: {answer}")
+        
+        # 4. 使用 cot 生成回答
 
     except Exception as e:
         logger.error(f"执行失败: {str(e)}")

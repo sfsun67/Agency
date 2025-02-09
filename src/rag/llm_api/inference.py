@@ -95,15 +95,15 @@ def curr_cost_est(prompt=None,
             logger.error(f"费用计算出现错误: {e}")
         return 0.0
 
-class QueryModel:
+class QueryLLMs:
     """
-    QueryModel 封装了调用多种大语言模型的查询逻辑，
+    QueryLLMs 封装了调用多种大语言模型的查询逻辑，
     并支持从环境变量和传入参数中获取 API key，模型配置也全部提取到固定的字典中。
     """
     
     def __init__(self, llm_config=None):
         """
-        初始化 QueryModel 实例。
+        初始化 QueryLLMs 实例。
         
         参数：
             api_config (str): OpenAI 的 API key。
@@ -140,8 +140,99 @@ class QueryModel:
                 logger.info("使用环境变量中的 API key")
                 api_config['api_key'] = os.getenv('OPENAI_API_KEY')
                 
-        
+    def format_structured_output_illustration_structure(self, format_json_schema) -> tuple:
+        """
+        迭代 format_json_schema 中的所有元素，按照指定格式输出字符串和 JSON。
 
+        Args:
+            format_json_schema (dict): 定义响应格式的 JSON schema。
+                示例:
+                {
+                    "title": "DetermineRoleSchema",
+                    "type": "object",
+                    "properties": {
+                        "file_name": {
+                            "type": "string",
+                            "title": "File Name",
+                            "description": "选定角色信息所在的作品"
+                        },
+                        "name": {
+                            "type": "string",
+                            "title": "Name",
+                            "description": "选定角色名字"
+                        }
+                    },
+                    "required": ["file_name", "name"]
+                }
+
+        Returns:
+            tuple: 包含以下三个元素的元组：
+                - json_illustration (str): 按指定格式整理的字符串说明
+                    示例:
+                    key 标题: "file_name"
+                    value 描述: "选定角色信息所在的作品"
+                    value 类型: "string"
+
+                    key 标题: "name"
+                    value 描述: "选定角色名字"
+                    value 类型: "string"
+
+                - json_structure_dict (dict): 字段描述的字典结构
+                    示例: {'file_name': '选定角色信息所在的作品', 'name': '选定角色名字'}
+
+                - response_format_json_schema_client (dict): 从 response_format_json_schema 重构的客户端使用的 JSON schema
+                    示例:
+                    {
+                        "type": "json_object",
+                        "properties": {
+                            "file_name": {
+                                "type": "string",
+                                "description": "选定角色信息所在的作品"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "选定角色名字"
+                            }
+                        }
+                    }
+        """
+        properties = format_json_schema.get('properties', {})
+        json_illustration = ""
+        json_structure_dict = {}
+        response_format_json_schema_client = {
+            "type": "json_object",
+            "properties": {}
+        }
+        
+        for key, value in properties.items():
+            json_illustration += f"""\
+    key 标题: "{key}"
+    value 描述: "{value.get('description', '')}"
+    value 类型: "{value.get('type', '')}"
+    
+    """
+            json_structure_dict[key] = value.get('description', '')
+            response_format_json_schema_client["properties"][key] = {
+                "type": value.get("type", ""),
+                "description": value.get("description", "")
+            }
+        
+        return json_illustration.strip(), json_structure_dict, response_format_json_schema_client
+    
+    def format_structured_output(self, messages, response_format):
+        """
+        qwen 等请求需要手动添加 json 输出要求到 prompt 中。
+        将 pydantic 的 response_format 转换为 json 输出要求，添加至 Prompt 末尾。
+        将 pydantic 的 response_format 转换为 json 格式，作为 response_format 的参数。
+        https://help.aliyun.com/zh/model-studio/user-guide/json-mode?spm=a2c4g.11186623.help-menu-search-2400256.d_0
+        """
+        response_format_json_schema = response_format.model_json_schema()
+        response_format_structured_output_illustration, response_format_json_structure, response_format_json_schema_client = self.format_structured_output_illustration_structure(response_format_json_schema)
+        
+        messages[0]["content"] += f"\n\n你需要提取出给定字段内容：\n\n 字段说明:\n{response_format_structured_output_illustration}\n请输出 JSON 字符串，不要输出其它无关内容。\n示例：{response_format_json_structure}"    # system prompt
+        messages[1]["content"] += f"\n\n请按照以下 JSON 格式输出结果：\n{response_format_json_structure}"    # user prompt
+        
+        return messages, response_format_json_schema_client
     
     def _call_openai(self, messages: List[Dict], 
                      temperature: float = 0.7, 
@@ -150,13 +241,11 @@ class QueryModel:
         """
         调用 OpenAI 类模型（包括 DeepSeek 等基于 OpenAI 接口的模型）。
         """
-        
         # format prompt
         if self.api_config['supplier'] == "qwen" and response_format:
-            response_format_json = response_format.model_json_schema()
-            response_format = json.dumps(response_format["properties"])
+            messages, response_format = self.format_structured_output(messages, response_format)
         
-        
+        # request llms client
         client = OpenAI(
             api_key=self.api_config['api_key'], 
             base_url=self.api_config.get("base_url"))

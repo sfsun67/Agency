@@ -1,14 +1,15 @@
+import json
 from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
 from langchain_chroma import Chroma
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 import logging
 from utils.prompt import BasePrompt
-from llm_api.inference import QueryModel
+from llm_api.inference import QueryLLMs
 
 
 class DetermineRoleSchema(BaseModel):
-    file_name: str = Field(description="选定角色信息所在的作品")
+    file_name: str = Field(..., description="选定角色信息所在的作品")
     name: str = Field(description="选定角色名字")
 
 class DetermineRolePrompt(BasePrompt):
@@ -60,7 +61,7 @@ class RoleMatching:
         """
         self.logger = logging.getLogger(__name__)
         self.config = config
-        self.llm_api = QueryModel(llm_config)
+        self.llm_api = QueryLLMs(llm_config)
         self.vectordb = vectordb
         
         self.top_k = config["role_matching"]["top_k"]
@@ -93,6 +94,9 @@ class RoleMatching:
                 )
         
         return retriever_docs
+    
+    def find_most_frequent_substring(self, string_list：, target_substring):
+        return max(string_list, key=lambda s: s.count(target_substring))
 
     def determine_roles_agent(
         self, 
@@ -120,39 +124,62 @@ class RoleMatching:
                 "self_awareness": self_awareness
             }
         
+        # 调整 prompt，请求 llms
         doc_list_str = DetermineRolePrompt.format_doc_list(doc_list)
         determine_role_prompt = DetermineRolePrompt(
                 doc_list_str=doc_list_str,
                 query=query
             ).render_prompt()
         
-        determine_role_query = self.llm_api.run(
+        determine_role = self.llm_api.run(
             prompt=determine_role_prompt,
             temperature=0.7,
             response_format=DetermineRoleSchema
             )
-        
-        
-        
-        try:
-            roles = [self._format_role_info(doc, score) 
-                    for doc, score in retriever_docs 
-                    if score >= self.similarity_threshold]
+
+        # 返回字段验证
+        if isinstance(determine_role, str):
+            try:
+                determine_role = json.loads(determine_role)
+                determine_role = DetermineRoleSchema(**determine_role)
+            except json.JSONDecodeError as e:
+                self.logger.error(f"JSON 解析失败: {str(e)}")
+                raise ValueError("determine_role 不是有效的 JSON 字符串")
             
-            # 计算主角信息
-            if roles:
-                self._calculate_main_character_info(roles)
-                
-        except Exception as e:
-            self.logger.error(f"角色确定失败: {str(e)}")
-            raise
+            
+        # 确保返回的文件名是正确的
+        # 获取所有文件名列表
+        available_filenames = list(doc_list.keys())
         
-        prompt = self.prompt_tpl.determine_roles_prompt.format(
-            doc_list_str=doc_list_str,
-            query=query
+        # 使用 find_most_frequent_substring 找到最匹配的文件名
+        matched_filename = self.find_most_frequent_substring(
+            available_filenames, 
+            determine_role.file_name
         )
         
-        return roles
+        # 更新 determine_role 中的文件名为匹配到的文件名
+        determine_role.file_name = matched_filename
+        self.logger.info(f"选定角色: {determine_role.name}, 来源: {determine_role.file_name}")
+
+        return determine_role
+
+    # try:
+    #     roles = [self._format_role_info(doc, score) 
+    #             for doc, score in retriever_docs 
+    #             if score >= self.similarity_threshold]
+        
+    #     # 计算主角信息
+    #     if roles:
+    #         self._calculate_main_character_info(roles)
+            
+    # except Exception as e:
+    #     self.logger.error(f"角色确定失败: {str(e)}")
+    #     raise
+    
+    # prompt = self.prompt_tpl.determine_roles_prompt.format(
+    #     doc_list_str=doc_list_str,
+    #     query=query
+    # )
 
     def _format_role_info(self, doc, score: float) -> Dict:
         """

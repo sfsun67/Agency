@@ -2,12 +2,12 @@ from typing import List, Dict, Optional
 import logging
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from llm_api.inference import QueryModel
+from llm_api.inference import QueryLLMs
 
 from index_builder.index_builder import IndexBuilder
 
 class RAGService:
-    def __init__(self, config: Dict, llm_config: QueryModel, index_builder: IndexBuilder):
+    def __init__(self, config: Dict, llm_config: QueryLLMs, index_builder: IndexBuilder):
         """
         初始化RAG服务
         Args:
@@ -16,7 +16,7 @@ class RAGService:
             index_builder: IndexBuilder实例
         """
         self.config = config
-        self.llm_api = QueryModel(llm_config)
+        self.llm_api = QueryLLMs(llm_config)
         self.index_builder = index_builder
         self.logger = logging.getLogger(__name__)
 

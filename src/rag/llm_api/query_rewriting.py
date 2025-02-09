@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 from pydantic import BaseModel
-from llm_api.inference import QueryModel
+from llm_api.inference import QueryLLMs
 from utils.prompt import BasePrompt
 
 class RewriteQueryPrompt(BasePrompt):
@@ -21,14 +21,14 @@ class RewriteQueryPrompt(BasePrompt):
 
 class QueryRewritingAgent:
     def __init__(self, 
-                 llm_config: QueryModel, 
+                 llm_config: QueryLLMs, 
                  ):
         """
         初始化查询重写类
         Args:
             llm_config: 
         """
-        self.llm_api = QueryModel(llm_config)
+        self.llm_api = QueryLLMs(llm_config)
         
     def rewrite_query_agent(self, original_query: str) -> str:
         """
