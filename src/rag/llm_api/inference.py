@@ -2,6 +2,8 @@ import os
 import time
 import json
 import logging
+from pydantic import BaseModel
+from typing import Type, List, Dict
 import tiktoken
 import openai
 import anthropic
@@ -141,10 +143,20 @@ class QueryModel:
         
 
     
-    def _call_openai(self, messages, temperature=0.7):
+    def _call_openai(self, messages: List[Dict], 
+                     temperature: float = 0.7, 
+                     response_format: Type[BaseModel] = None,
+                     ):
         """
         调用 OpenAI 类模型（包括 DeepSeek 等基于 OpenAI 接口的模型）。
         """
+        
+        # format prompt
+        if self.api_config['supplier'] == "qwen" and response_format:
+            response_format_json = response_format.model_json_schema()
+            response_format = json.dumps(response_format["properties"])
+        
+        
         client = OpenAI(
             api_key=self.api_config['api_key'], 
             base_url=self.api_config.get("base_url"))
@@ -153,7 +165,14 @@ class QueryModel:
             "messages": messages,
             "temperature": temperature
             }
-        completion = client.chat.completions.create(**params)
+        if response_format:
+            params["response_format"] = response_format
+        
+        if self.api_config['supplier'] == "openai" and response_format:
+            completion = client.beta.chat.completions.parse(**params)    # for openai structured_output https://platform.openai.com/docs/guides/structured-outputs#tips-for-your-data-structure
+        else:
+            completion = client.chat.completions.create(**params)
+        
         
         if completion.usage:
             return completion.choices[0].message.content, completion.usage
@@ -163,12 +182,13 @@ class QueryModel:
     def run(self, 
             prompt: str, 
             system_prompt: str = 'You are a helpful assistant.', 
+            response_format: Type[BaseModel] = None,
             tries: int = 5, 
             timeout: float = 5.0, 
             temperature: float = 0.7, 
             print_cost: bool = True):
         """
-        根据指定模型查询结果，重试指定次数直至成功返回结果。
+        先根据请求类型整理请求参数，重试指定次数直至成功返回结果。
         
         参数：
             model_key (str): 用于查询的模型标识符。
@@ -183,18 +203,23 @@ class QueryModel:
             str: 模型返回的文本答案。
         """
 
+            
+        # call llm client
         attempt = 0
         usage = None
         while attempt < tries:
             try:
                 if self.api_config["client"] == "openai":
-                    
                     messages = [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
                     ]
-                    answer, usage = self._call_openai(messages, temperature)
-                    
+                    answer, usage = self._call_openai(
+                        messages=messages, 
+                        temperature=temperature, 
+                        response_format=response_format,
+                        )
+                
                     curr_cost_est(
                         prompt=prompt,
                         system_prompt=system_prompt,

@@ -19,7 +19,7 @@ def get_registered_models():
     return {
         "gpt-4o-mini": {
             "client": "openai",
-            "model": "gpt-4o-mini-2024-07-18"
+            "model": "gpt-4o-mini-2024-08-06"
         },
         "gpt-4o": {
             "client": "openai",

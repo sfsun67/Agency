@@ -3,7 +3,7 @@ gpt-4o-mini:
   supplier: "openai"
   client: "openai"
   base_url: "https://api.openai.com/v1"
-  api_version: "2024-03-01"
+  api_version: "2024-08-06"
   api_key: "YOUR_API_KEY"
   model_name: "gpt-4o"
 
@@ -11,7 +11,7 @@ gpt-4o:
   supplier: "openai"
   client: "openai"
   base_url: "https://api.openai.com/v1"
-  api_version: "2024-03-01"
+  api_version: "2024-08-06"
   api_key: "YOUR_API_KEY"
   model_name: "gpt-4o"
   costs:

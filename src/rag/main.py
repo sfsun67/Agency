@@ -80,7 +80,7 @@ def main():
     # 设置日志
     setup_logging()
     logger = logging.getLogger(__name__)
-    model_name = "qwen-max-latest"
+    model_name = "gpt-4o-mini"    #"qwen-max-latest"
 
     try:
         # 加载配置
@@ -100,7 +100,11 @@ def main():
         )
         index_builder = IndexBuilder(config)
         vectorstore = index_builder.load_index(config["vectorstore"]["persist_directory"]+'/'+config["vectorstore"]["metadata_path"].split('/')[-1]+'_'+config["vectorstore"]["embedding_model"].split('/')[-1])   # eg. data/vectorstore/retrieval_traits_all-MiniLM-L6-v2
-        role_matching = RoleMatching(config)
+        role_matching = RoleMatching(
+            config=config,
+            llm_config=llm_config[model_name],
+            vectordb=vectorstore            
+        )
         rag_service = RAGService(
             config=config, 
             llm_config=llm_config[model_name],
@@ -112,26 +116,17 @@ def main():
         
         # 1. 重写查询
         logger.info("重写查询...")
-        rewritten_query = query_rewriting.rewrite_query_agent(
-            original_query=original_query,
-            context={"domain": "social class", "era": "mid-twentieth century"}   # TODO use context
-        )
+        rewritten_query = query_rewriting.rewrite_query_agent(original_query=original_query)
         logger.info(f"重写后的查询: {rewritten_query}")
 
         # 2. 确定角色
         logger.info("确定角色...")
         
-        # for test 
-        a = vectorstore.similarity_search_with_score(rewritten_query)
-        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
-        retrieved_docs = retriever.invoke(rewritten_query)
-        print(retrieved_docs)
-        
+        # 使用新的函数名和参数
         role = role_matching.determine_roles_agent(
             query=original_query,
             rewritten_query=rewritten_query,
-            vectordb=vectorstore, 
-            )
+        )
         if not role:
             logger.warning("未找到相关角色")
             return
