@@ -1,10 +1,4 @@
-langchain-core>=0.1.27
-langchain-community>=0.0.24
-langchain-chroma>=0.0.10
-langchain-huggingface>=0.0.10
-openai>=1.12.0
-tenacity>=8.2.3
-chromadb>=0.4.24
-sentence-transformers>=2.5.1
-pyyaml>=6.0.1
-python-dotenv>=1.0.1 
+langchain=0.3.1
+langchain-core=0.3.7
+langchain-openai=0.2.0
+langchain-community=0.3.1

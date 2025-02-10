@@ -121,26 +121,46 @@ def main():
             rewritten_query=rewritten_query,
         )
 
-        # 任务1：完成单轮对话
-        # 输入
-        
-        # 任务2：完成多轮对话
-        
-        
-        # 任务3：将 CoT 模式嵌入到任务1 与 任务2 中。
-        
-        
+        test = "test"
+        # 任务1：完成单轮对话         
 
-        # 3. 使用RAG服务生成回答
-        logger.info("生成回答...")
-        answer = rag_service.run(
-            rewritten_query,
-            target_role["role_name"]
-        )
-        logger.info(f"生成的回答: {answer}")
-        
-        # 4. 使用 cot 生成回答
+        # 输入 
 
+        # 1. 当前角色
+        # 2. 当前角色所在的文学作品
+        # 3. 用户输入
+        # 4. 环境感知
+
+        # 输出
+
+        # answer
+
+        # 任务2：完成多轮对话      
+
+        # 输入 
+
+        # 1. 当前角色
+        # 2. 当前角色所在的文学作品
+        # 3. 用户输入
+        # 4. 环境感知
+        # 5. 历史对话
+
+        # 输出
+
+        # answer
+
+        # 任务3：faction call 将 CoT 模式嵌入到任务1 与 任务2 中。
+
+        # 输入：
+
+        # 1. 上下文
+        # 2. 判断是否开启 CoT 模式
+        # 3. 之前所有的 CoT 内容
+
+        # 输出：
+
+        # bool
+        
     except Exception as e:
         logger.error(f"执行失败: {str(e)}")
         raise
